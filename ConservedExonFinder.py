@@ -4,6 +4,7 @@
 import os
 import subprocess
 import shutil
+import re
 import numpy as np
 import matplotlib
 # explicitly set the DISPLAY environment variable here
@@ -13,21 +14,21 @@ import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
 # function to split each sequence in a fasta file into its own individual fasta file
-def FastaSplitter(queryfile):
+def FastaSplitter(fastafile):
 	######################################
 	## read in exon names and sequences ##
 	######################################
 	ExonNames = []
 	ExonSeqs = []
 	tempseq = ''
-	for line in open(queryfile,"r"):
+	for line in open(fastafile,"r"):
 		if line.startswith('>'):
 			# read in exon name (first part of sequence title line)
-			if line.contains(' '):
-				ExonNames.append(line.split(' ')[0].strip('>').strip('\n'))
+			if re.search('\:',line) == None:
+				print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
+				raise SystemExit
 			else:
-				print('ERROR - EXON NAMES ARE NOT IN THE FORM ">firstpart secondpart"')
-				raise SystemExit				
+				ExonNames.append(line.strip('>').strip('\n'))			
 			# if tempseq has anything in it, add it to ExonSeqs (NB: this will always be one behind the exon name that has been added)
 			if tempseq != '':
 				ExonSeqs.append(tempseq)
@@ -182,5 +183,5 @@ def ExonerateParser():
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
 
-FastaSplitter(queryfile='dmel-all-exon-r6.11_constitutive.fasta')
+FastaSplitter(fastafile='dmel-all-exon-r6.11_constitutive.fasta')
 
