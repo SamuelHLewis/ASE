@@ -182,5 +182,5 @@ def ExonerateParser():
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
 
-Exonerate_runner(queryfile='dmel-all-exon-r6.11_constitutive.fasta',targetgenome='dsim-all-chromosome-r2.02.fasta',outfile='DsimNewExons.fas')
+FastaSplitter(queryfile='dmel-all-exon-r6.11_constitutive.fasta')
 
