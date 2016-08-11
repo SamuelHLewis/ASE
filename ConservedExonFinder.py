@@ -13,6 +13,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
+# user inputs go here
+InputFasta = 'test.fas'
+if InputFasta.endswith('.fasta'):
+	InputFasta.replace('.fasta','.fas')
+Genome = 'dsim-all-chromosome-r2.02.fasta'
+
+
 # function to split each sequence in a fasta file into its own individual fasta file
 def FastaSplitter(fastafile):
 	######################################
@@ -59,10 +66,10 @@ def FastaSplitter(fastafile):
 		tempout = open(filename,'wt')
 		tempout.write(exon)
 		tempout.close()
-	print('Exons written to individual files: starting Exonerate run')
-	return('./tempexons')
+	print('Exons written to individual files')
+	return('./tempexons/')
 
-def ExonerateCaller(queryfile,targetgenome,outfile):
+def ExonerateCaller(querydir,targetgenome,outfile):
 	################################
 	## run Exonerate on all exons ##
 	################################
@@ -70,44 +77,42 @@ def ExonerateCaller(queryfile,targetgenome,outfile):
 	if os.path.exists(outfile) is True:
 		os.remove(outfile)
 	# run Exonerate on 10 exons in parallel
-	cmd = 'ls ./tempexons/*_exon.fas | parallel -j 10 \'exonerate --model est2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000 --showvulgar no --showalignment no --ryo ">%qi\\n%tas\\n" --query {} --target ' + targetgenome + '>> ' + outfile + '\''
+	cmd = 'ls ' + querydir + '*_exon.fas | parallel -j 10 \'exonerate --model est2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000 --showvulgar no --showalignment no --showsugar yes --query {} --target ' + targetgenome + '>> ' + outfile + '\''
 	subprocess.call(cmd,shell=True)
 	print('Exonerate finished')
 	# remove temporary individual exon fasta files
-	shutil.rmtree('./tempexons/')
-	# clean up output file (to get rid of print statements, parameters etc that Exonerate also outputs)
-	newout = ''
-	for line in open(outfile,'r'):
-		if not line.startswith(outfile):
-			if not line.startswith('Command'):
-				if not line.startswith('Host'):
-					if not line.startswith('\n'):
-						if not line.startswith('-- completed'):
-							newout += line
-	newoutfile = open(outfile,'wt')
-	newoutfile.write(newout)
-	newoutfile.close()
+	shutil.rmtree(querydir)
+	return(outfile)
 
-def ExonerateParser():
-	######################################
-	## read new exon names and sequences ##
+def ExonerateParser(querydir):
 	#######################################
-	NewExonNames = []
-	NewExonSeqs = []
-	tempseq = ''
+	## read query exon names and lengths ##
+	#######################################
+	QueryExonLengths = {}
+	for file in os.listdir(querydir):
+		for line in open(file,"r"):
+			if line.startswith('>'):
+				# read in exon name (first part of sequence title line)
+				if re.search('\:',line) == None:
+					print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
+					raise SystemExit
+				else:
+					tempname=line.strip('>').strip('\n')		
+			else:
+				# read in seq length
+				templen = len(line.strip('\n'))
+		QueryExonLengths(tempname) = templen
+	##########################################
+	## read target exon names and sequences ##
+	##########################################
+	TargetExonNames = []
+	TargetExonLengths = []
 	for line in open(outfile,'r'):
 		if line.startswith('sugar:'):
-			# read in exon name (first part of sequence title line)
-			NewExonNames.append(line.strip('>').strip('\n'))
-			# if tempseq has anything in it, add it to ExonSeqs (NB: this will always be one behind the exon name that has been added)
-			if tempseq != '':
-				NewExonSeqs.append(tempseq)
-				tempseq = ''
-		else:
-			# add exon sequence to tempseq (not directly appending to list because of wrapping)
-			tempseq += line.strip('\n')
-	# add the last exon sequence
-	NewExonSeqs.append(tempseq)
+			# read in exon name (keeping same as Query name to allow 1:1 matching)
+			TargetExonNames.append(line.split(' ')[1])
+			# read in exon match length
+			TargetExonLengths.append()
 	#############################################################################
 	## find exons & genes with length differences between old and new versions ##
 	#############################################################################
@@ -183,5 +188,9 @@ def ExonerateParser():
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
 
-FastaSplitter(fastafile='dmel-all-exon-r6.11_constitutive.fasta')
+# function to find conserved exons in one genome based on exons in another genome
+def ConservedExonFinder(fastafile):
+	ExonDir = FastaSplitter(fastafile=InputFasta)
+	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputFasta.replace('.fas','.exonerate'))
 
+ConservedExonFinder(fastafile=InputFasta)
