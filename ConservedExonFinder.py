@@ -104,35 +104,35 @@ def ExonerateCaller(querydir,targetgenome,outfile):
 	shutil.rmtree(querydir)
 	return(outfile)
 
-def ExonerateParser(querydir):
+def ExonerateParser(exonfasta,exonerateoutput):
 	#######################################
 	## read query exon names and lengths ##
 	#######################################
 	QueryExonLengths = {}
-	for file in os.listdir(querydir):
-		for line in open(file,"r"):
-			if line.startswith('>'):
-				# read in exon name (first part of sequence title line)
-				if re.search('\:',line) == None:
-					print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
-					sys.exit(0)
-				else:
-					tempname=line.strip('>').strip('\n')		
+	for line in open(exonfasta,"r"):
+		if line.startswith('>'):
+			# read in exon name (first part of sequence title line)
+			if re.search('\:',line) == None:
+				print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
+				sys.exit(0)
 			else:
-				# read in seq length
-				templen = len(line.strip('\n'))
-		QueryExonLengths[tempname] = templen
+				tempname=line.strip('>').strip('\n')		
+		else:
+			# read in seq length
+			templen = len(line.strip('\n'))
+			QueryExonLengths[tempname] = templen
 	##########################################
 	## read target exon names and sequences ##
 	##########################################
 	TargetExonNames = []
 	TargetExonLengths = []
-	for line in open(outfile,'r'):
+	for line in open(exonerateoutput,'r'):
 		if line.startswith('sugar:'):
+			print(line.split(' '))
 			# read in exon name (keeping same as Query name to allow 1:1 matching)
 			TargetExonNames.append(line.split(' ')[1])
 			# read in exon match length
-			TargetExonLengths.append()
+			TargetExonLengths.append(int(line.split(' ')[3])-int(line.split(' ')[2]))
 	#############################################################################
 	## find exons & genes with length differences between old and new versions ##
 	#############################################################################
@@ -212,5 +212,6 @@ def ExonerateParser(querydir):
 def ConservedExonFinder(fastafile):
 	ExonDir = FastaSplitter(fastafile=InputExons)
 	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputExons.replace('.fas','.exonerate'))
+	ExonerateParser(exonfasta=InputExons,exonerateoutput=ExonerateOutput)
 
 ConservedExonFinder(fastafile=InputExons)
