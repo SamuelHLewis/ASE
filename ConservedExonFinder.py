@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # wrapper script to run exonerate one group of (constitutive) exons at a time
 # exons run individually (but multiple in parallel) to improve speed
 
@@ -13,13 +15,30 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 import argparse
+import sys
 
-# user inputs go here
-InputFasta = 'test.fas'
-if InputFasta.endswith('.fasta'):
-	InputFasta.replace('.fasta','.fas')
-Genome = 'dsim-all-chromosome-r2.02.fasta'
-
+#########################
+# USER ARGUMENT PARSING #
+#########################
+parser = argparse.ArgumentParser(description="Read arguments")
+parser.add_argument("-e","--exons",type=str,help="Exon fasta file")
+parser.add_argument("-g","--genome",type=str,help="Genome fasta file")
+args=parser.parse_args()
+# exon file parsing
+InputExons = args.exons
+if InputExons is None:
+	print("ERROR: no exon file (-e) specified")
+	sys.exit(0)
+else:
+	if InputExons.endswith('.fasta'):
+		InputExons=InputExons.replace('.fasta','.fas')
+		print("Exon file = "+InputExons)
+Genome = args.genome
+if Genome is None:
+	print("ERROR: no genome file (-g) specified")
+	sys.exit(0)
+else:
+	print("Genome file = "+Genome)
 
 # function to split each sequence in a fasta file into its own individual fasta file
 def FastaSplitter(fastafile):
@@ -34,7 +53,7 @@ def FastaSplitter(fastafile):
 			# read in exon name (first part of sequence title line)
 			if re.search('\:',line) == None:
 				print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
-				raise SystemExit
+				sys.exit(0)
 			else:
 				ExonNames.append(line.strip('>').strip('\n'))			
 			# if tempseq has anything in it, add it to ExonSeqs (NB: this will always be one behind the exon name that has been added)
@@ -51,7 +70,7 @@ def FastaSplitter(fastafile):
 		print(str(len(ExonNames)) + ' exon names and ' + str(len(ExonSeqs)) + ' exon sequences read')
 	else:
 		print('ERROR - EACH EXON NAME DOES NOT HAVE A CORRESPONDING SEQUENCE')
-		raise SystemExit
+		sys.exit(0)
 	# check that directory exists for temporary exon output files (if not, make it)
 	if os.path.isdir('./tempexons') is False:
 		cmd = 'mkdir ./tempexons'
@@ -96,13 +115,13 @@ def ExonerateParser(querydir):
 				# read in exon name (first part of sequence title line)
 				if re.search('\:',line) == None:
 					print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
-					raise SystemExit
+					sys.exit(0)
 				else:
 					tempname=line.strip('>').strip('\n')		
 			else:
 				# read in seq length
 				templen = len(line.strip('\n'))
-		QueryExonLengths(tempname) = templen
+		QueryExonLengths[tempname] = templen
 	##########################################
 	## read target exon names and sequences ##
 	##########################################
@@ -191,7 +210,7 @@ def ExonerateParser(querydir):
 
 # function to find conserved exons in one genome based on exons in another genome
 def ConservedExonFinder(fastafile):
-	ExonDir = FastaSplitter(fastafile=InputFasta)
-	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputFasta.replace('.fas','.exonerate'))
+	ExonDir = FastaSplitter(fastafile=InputExons)
+	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputExons.replace('.fas','.exonerate'))
 
-ConservedExonFinder(fastafile=InputFasta)
+ConservedExonFinder(fastafile=InputExons)
