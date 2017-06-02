@@ -55,7 +55,8 @@ def FastaSplitter(fastafile):
 				print('ERROR - EXON NAME ' + line + ' IS NOT IN THE FORM ">GENE:EXON"')
 				sys.exit(0)
 			else:
-				ExonNames.append(line.strip('>').strip('\n'))			
+				exonname=re.sub("\s.*","",line.strip(">").strip("\n"))
+				ExonNames.append(exonname)			
 			# if tempseq has anything in it, add it to ExonSeqs (NB: this will always be one behind the exon name that has been added)
 			if tempseq != '':
 				ExonSeqs.append(tempseq)
