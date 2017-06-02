@@ -127,24 +127,23 @@ def ExonerateParser(exonfasta,exonerateoutput):
 	TargetExonNames = []
 	TargetExonLengths = []
 	for line in open(exonerateoutput,'r'):
-		if line.startswith('sugar:'):
-			print(line.split(' '))
+		if line.startswith('sugar:'):	
 			# read in exon name (keeping same as Query name to allow 1:1 matching)
 			TargetExonNames.append(line.split(' ')[1])
 			# read in exon match length
 			TargetExonLengths.append(int(line.split(' ')[3])-int(line.split(' ')[2]))
-	#############################################################################
-	## find exons & genes with length differences between old and new versions ##
-	#############################################################################
+	##############################################################################################
+	## find exons & genes with length differences between query (old) and target (new) versions ##
+	##############################################################################################
 	# find exons with different lengths
 	ExonLengthDiffs = {}
-	for i in range(len(NewExonNames)):
-		NewExonLen = len(NewExonSeqs[i])
-		for j in range(len(ExonNames)):
-			if NewExonNames[i] == ExonNames[j]:
-				OldExonLen = len(ExonSeqs[j])
-				if NewExonLen != OldExonLen:
-					ExonLengthDiffs[NewExonNames[i]] = abs(OldExonLen-NewExonLen)
+	for i in range(len(TargetExonNames)):
+		TargetExonLen = TargetExonLengths[i]
+		for j in QueryExonLengths:
+			if TargetExonNames[i] == j:
+				QueryExonLen = QueryExonLength[j]
+				if TargetExonLen != QueryExonLen:
+					ExonLengthDiffs[TargetExonNames[i]] = abs(QueryExonLen-TargetExonLen)
 	# get total length differences across exons for each gene
 	GeneLengthDiffs = {}
 	for exonname in ExonLengthDiffs:
@@ -162,9 +161,9 @@ def ExonerateParser(exonfasta,exonerateoutput):
 		else:
 			GeneExonDiffs[genename] += 1
 	# calculate overall % of exons and genes with length differences
-	DiffExonsProp = (len(ExonLengthDiffs)/len(ExonNames))*100
+	DiffExonsProp = (len(ExonLengthDiffs)/len(QueryExonLengths))*100
 	AllGenes = []
-	for exon in ExonNames:
+	for exon in TargetExonNames:
 		genename = exon.split(':')[0]
 		if genename not in AllGenes:
 			AllGenes.append(genename)
@@ -191,11 +190,11 @@ def ExonerateParser(exonfasta,exonerateoutput):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per gene')
-	outname = outfile.replace('.fas','_GeneLengthDiffs.pdf')
+	outname = exonfasta.replace('.fas','_GeneLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
-	# output histogram of length differences per gene
+	# output histogram of length differences per exon
 	ExonLengthDiffList = []
 	for exon in ExonLengthDiffs:
 		ExonLengthDiffList.append(ExonLengthDiffs[exon])
@@ -203,7 +202,7 @@ def ExonerateParser(exonfasta,exonerateoutput):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per exon')
-	outname = outfile.replace('.fas','_ExonLengthDiffs.pdf')
+	outname = exonfasta.replace('.fas','_ExonLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
