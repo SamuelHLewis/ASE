@@ -91,6 +91,7 @@ def FastaSplitter(fastafile):
 	return('./tempexons/')
 
 def ExonerateCaller(querydir,targetgenome,outfile):
+#def ExonerateCaller(queryexons,targetgenome,outfile):
 	################################
 	## run Exonerate on all exons ##
 	################################
@@ -98,11 +99,14 @@ def ExonerateCaller(querydir,targetgenome,outfile):
 	if os.path.exists(outfile) is True:
 		os.remove(outfile)
 	# run Exonerate on 10 exons in parallel
-	cmd = 'ls ' + querydir + '*_exon.fas | parallel -j 10 \'exonerate --model est2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000 --showvulgar no --showalignment no --showsugar yes --query {} --target ' + targetgenome + '>> ' + outfile + '\''
+	cmd = 'ls ' + querydir + '*_exon.fas | parallel -j 10 \'exonerate --model est2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000 --showvulgar no --showalignment no --showsugar yes --query {} --target ' + targetgenome + '>> ' + outfile + '\''	
+#	subprocess.call(cmd,shell=True)
+#	# run Exonerate on each exon in serial
+#	cmd = 'exonerate --model est2genome --softmasktarget yes --bestn 1 --minintron 20 --maxintron 20000 --showvulgar no --showalignment no --showsugar yes --query ' + queryexons  + ' --target ' + targetgenome + '>> ' + outfile	
 	subprocess.call(cmd,shell=True)
 	print('Exonerate finished')
 	# remove temporary individual exon fasta files
-	shutil.rmtree(querydir)
+#	shutil.rmtree(querydir)
 	return(outfile)
 
 def ExonerateParser(exonfasta,exonerateoutput):
@@ -122,17 +126,29 @@ def ExonerateParser(exonfasta,exonerateoutput):
 			# read in seq length
 			templen = len(line.strip('\n'))
 			QueryExonLengths[tempname] = templen
-	##########################################
-	## read target exon names and sequences ##
-	##########################################
+	###################################################
+	## read target exon names, lengths and positions ##
+	###################################################
 	TargetExonNames = []
+	TargetExonStarts=[]
+	TargetExonEnds=[]
 	TargetExonLengths = []
+	TargetExonStrands= []
+	TargetExonChroms = []
 	for line in open(exonerateoutput,'r'):
 		if line.startswith('sugar:'):	
 			# read in exon name (keeping same as Query name to allow 1:1 matching)
 			TargetExonNames.append(line.split(' ')[1])
+			# read in exon start coordinate
+			TargetExonStarts.append(line.split(' ')[6])
+			# read in exon end coordinate
+			TargetExonEnds.append(line.split(' ')[7])
+			# read in exon strand
+			TargetExonStrands.append(line.split(' ')[8])
+			# read in exon chromosome
+			TargetExonChroms.append(line.split(' ')[5])
 			# read in exon match length
-			TargetExonLengths.append(int(line.split(' ')[3])-int(line.split(' ')[2]))
+			TargetExonLengths.append(int(line.split(' ')[7])-int(line.split(' ')[6]))
 	##############################################################################################
 	## find exons & genes with length differences between query (old) and target (new) versions ##
 	##############################################################################################
@@ -142,7 +158,7 @@ def ExonerateParser(exonfasta,exonerateoutput):
 		TargetExonLen = TargetExonLengths[i]
 		for j in QueryExonLengths:
 			if TargetExonNames[i] == j:
-				QueryExonLen = QueryExonLength[j]
+				QueryExonLen = QueryExonLengths[j]
 				if TargetExonLen != QueryExonLen:
 					ExonLengthDiffs[TargetExonNames[i]] = abs(QueryExonLen-TargetExonLen)
 	# get total length differences across exons for each gene
@@ -207,11 +223,18 @@ def ExonerateParser(exonfasta,exonerateoutput):
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
+	# output gff of target exons
+	outname = exonerateoutput.replace('.exonerate','.gff')
+	outgff = open(outname,'wt')
+	for i in range(len(TargetExonNames)):
+		outgff.write(TargetExonChroms[i]+'\tExonerate\texon\t'+TargetExonStarts[i]+'\t'+TargetExonEnds[i]+'\t'+TargetExonStrands[i]+'\t.\tID='+TargetExonNames[i]+'\n')
+	outgff.close()
 
 # function to find conserved exons in one genome based on exons in another genome
 def ConservedExonFinder(fastafile):
 	ExonDir = FastaSplitter(fastafile=InputExons)
 	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputExons.replace('.fas','.exonerate'))
+#	ExonerateOutput = ExonerateCaller(queryexons=InputExons,targetgenome=Genome,outfile=InputExons.replace('.fas','.exonerate'))
 	ExonerateParser(exonfasta=InputExons,exonerateoutput=ExonerateOutput)
 
 ConservedExonFinder(fastafile=InputExons)
