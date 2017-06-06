@@ -119,14 +119,14 @@ def ExonerateCaller(querydir,targetgenome,outfile):
 	shutil.rmtree(querydir)
 	return(outfile)
 
-def ExonerateParser(exonfasta,exonerateoutput,query):
+def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	#######################################
 	## read query exon names and lengths ##
 	#######################################
 	QueryExonNames = []
 	QueryExonSeqs = []
 	QueryExonLengths = []
-	for line in open(exonfasta,"r"):
+	for line in open(queryexons,"r"):
 		if line.startswith('>'):
 			# read in exon name (first part of sequence title line)
 			if re.search('\:',line) == None:
@@ -250,7 +250,7 @@ def ExonerateParser(exonfasta,exonerateoutput,query):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per gene')
-	outname = exonfasta.replace('.fas','_GeneLengthDiffs.pdf')
+	outname = queryexons.replace('.fas','_GeneLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
@@ -262,12 +262,12 @@ def ExonerateParser(exonfasta,exonerateoutput,query):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per exon')
-	outname = exonfasta.replace('.fas','_ExonLengthDiffs.pdf')
+	outname = queryexons.replace('.fas','_ExonLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
 	# output gff of target exons which are same length as query
-	outname = query.replace('.fas','.gff')
+	outname = targetgenome.replace('.fas','.gff')
 	outgff = open(outname,'wt')
 	for i in range(len(TargetExonNamesVerified)):
 		outgff.write(TargetExonChromsVerified[i]+'\tExonerate\texon\t'+TargetExonStartsVerified[i]+'\t'+TargetExonEndsVerified[i]+'\t'+TargetExonStrandsVerified[i]+'\t.\tID='+TargetExonNamesVerified[i]+'\n')
@@ -278,11 +278,23 @@ def ExonerateParser(exonfasta,exonerateoutput,query):
 	for i in range(len(QueryExonNamesVerified)):
 		outfasta.write('>'+QueryExonNamesVerified[i]+'\n'+QueryExonSeqsVerified[i]+'\n')
 	outfasta.close()
+	# return the name of the target gff
+	return(targetgenome.replace('.fas','.gff'))
+
+# function to extract sequences from fasta file according to annotations in gff file
+def Extractor(fastafile,gff):
+	# extract sequences corresponding to gff annotations to a fasta file (NB: this forces strandedness i.e. reverse-complements annotations on the antisense strand)
+	cmd = 'bedtools getfasta -s -fo ' + fastafile.replace('.fas','_exons.fas') + ' -fi ' + fastafile + ' -bed ' + gff
+	subprocess.call(cmd,shell=True)
+	print('Fasta file written: ' + fastafile.replace('.fas','_exons.fas'))
+	# remove temp/intermediate files
+	os.remove(fastafile + '.fai')
 
 # function to find conserved exons in one genome based on exons in another genome
 def ConservedExonFinder(fastafile):
 	ExonDir = FastaSplitter(fastafile=InputExons)
 	ExonerateOutput = ExonerateCaller(querydir=ExonDir,targetgenome=Genome,outfile=InputExons.replace('.fas','.exonerate'))
-	ExonerateParser(exonfasta=InputExons,exonerateoutput=ExonerateOutput,query=Genome)
+	TargetGFF = ExonerateParser(queryexons=InputExons,exonerateoutput=ExonerateOutput,targetgenome=Genome)
+	Extractor(fastafile=Genome,gff=TargetGFF)
 
 ConservedExonFinder(fastafile=InputExons)
