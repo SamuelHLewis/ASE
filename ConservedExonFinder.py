@@ -231,13 +231,17 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	####################
 	## output results ##
 	####################
+	# make directory for report files
+	if os.path.isdir("ReportFiles") is True:
+		shutil.rmtree("ReportFiles")
+	os.makedirs("ReportFiles")
 	# output summary to file
 	if len(ExonLengthDiffs) > 0:
 		print(str(len(ExonLengthDiffs)) + ' exons (' + str(DiffExonsProp) + '%) and ' + str(len(GeneLengthDiffs)) + ' genes ('+ str(DiffGenesProp) + '%) are different in length')
 		output = str(len(ExonLengthDiffs)) + ' exons (' + str(DiffExonsProp) + '%) and ' + str(len(GeneLengthDiffs)) + ' genes ('+ str(DiffGenesProp) + '%) are different in length\n\nGene\tExons different\tTotal length difference\n'
 		for gene in GeneLengthDiffs:
 			output += gene + '\t' + str(GeneExonDiffs[gene]) + '\t' + str(GeneLengthDiffs[gene]) + '\n'
-		report = open('report.txt','wt')
+		report = open('./ReportFiles/report.txt','wt')
 		report.write(output)
 		report.close()
 	else:
@@ -250,7 +254,7 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per gene')
-	outname = queryexons.replace('.fas','_GeneLengthDiffs.pdf')
+	outname = "./ReportFiles/"+queryexons.replace('.fas','_GeneLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
@@ -262,7 +266,7 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	plt.xlabel('Length Difference')
 	plt.ylabel('Count')
 	plt.title('Length differences per exon')
-	outname = queryexons.replace('.fas','_ExonLengthDiffs.pdf')
+	outname = "./ReportFiles/"+queryexons.replace('.fas','_ExonLengthDiffs.pdf')
 	outpdf = PdfPages(outname)
 	plt.savefig(outpdf, format='pdf')
 	outpdf.close()
@@ -270,7 +274,7 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	outname = targetgenome.replace('.fas','.gff')
 	outgff = open(outname,'wt')
 	for i in range(len(TargetExonNamesVerified)):
-		outgff.write(TargetExonChromsVerified[i]+'\tExonerate\texon\t'+TargetExonStartsVerified[i]+'\t'+TargetExonEndsVerified[i]+'\t'+TargetExonStrandsVerified[i]+'\t.\tID='+TargetExonNamesVerified[i]+'\n')
+		outgff.write(TargetExonChromsVerified[i]+'\tExonerate\t'+TargetExonNamesVerified[i]+'\t'+TargetExonStartsVerified[i]+'\t'+TargetExonEndsVerified[i]+'\t'+TargetExonStrandsVerified[i]+'\t.\tID='+TargetExonNamesVerified[i]+'\n')
 	outgff.close()
 	# ouput fasta of query exons which are same length as target
 	outname = exonerateoutput.replace('.exonerate','.lengthverified.fas')
@@ -284,9 +288,9 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 # function to extract sequences from fasta file according to annotations in gff file
 def Extractor(fastafile,gff):
 	# extract sequences corresponding to gff annotations to a fasta file (NB: this forces strandedness i.e. reverse-complements annotations on the antisense strand)
-	cmd = 'bedtools getfasta -s -fo ' + fastafile.replace('.fas','_exons.fas') + ' -fi ' + fastafile + ' -bed ' + gff
+	cmd = 'bedtools getfasta -name -s -fo ' + fastafile.replace('.fas','.exons.lengthverified.fas') + ' -fi ' + fastafile + ' -bed ' + gff
 	subprocess.call(cmd,shell=True)
-	print('Fasta file written: ' + fastafile.replace('.fas','_exons.fas'))
+	print('Fasta file written: ' + fastafile.replace('.fas','.exons.lengthverified.fas'))
 	# remove temp/intermediate files
 	os.remove(fastafile + '.fai')
 
