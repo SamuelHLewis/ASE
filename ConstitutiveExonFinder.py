@@ -1,7 +1,23 @@
+#!/usr/bin/env python3
+
 # script to extract constitutive exons from exon fasta file in FlyBase format
 # NB input MUST be in FlyBase format ">GENE:EXON type=TYPE; loc=LOCATION; parent=TRANSCRIPTS; MD5=ID; release=RELEASE; species=SPECIES; length=LENGTH"
 
-exonfile = 'dmel-all-exon-r6.11.fasta'
+import argparse
+
+#########################
+# USER ARGUMENT PARSING #
+#########################
+parser = argparse.ArgumentParser(description="Read arguments")
+parser.add_argument("-e","--exons",type=str,help="Exon fasta file")
+args=parser.parse_args()
+# exon file parsing
+exonfile = args.exons
+if exonfile is None:
+	print("ERROR: no exon file (-e) specified")
+	sys.exit(0)
+else:
+	print("Exon file = "+exonfile)
 
 # read in exon names and sequences
 ExonNames = []
