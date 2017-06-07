@@ -100,6 +100,15 @@ def GenomeWideBoundaryFinder(infile):
 				raise SystemExit
 		print(str(len(boundaries)) + ' boundaries found for ' + gene + ' exons')
 	print('All exon boundaries found for all genes')
+
+	# output fasta file of exon boundaries
+	outfasta=open(infile.replace(".fas",".boundaries.fas"),"wt")
+	for gene in GenesBoundaries:
+		count=0
+		for boundary in GenesBoundaries[gene]:
+			count+=1
+			outfasta.write(">"+gene+"_"+str(count)+"\n"+boundary+"\n")
+	print("Fasta file of exon boundaries written to "+infile.replace(".fas",".boundaries.fas"))
 	return(GenesBoundaries)
 
 GenomeWideBoundaryFinder(infile=exonfile)
