@@ -16,6 +16,7 @@ Takes a query exon fasta file, a target genome fasta file, and (optionally) a nu
 **Note: input exon (query) and genome (target) files must end ".fas"**
 
 **Note: input exon (query) file must be named in the format**
+
 `GeneName:ExonNumber`
 
 **Example usage:**
@@ -30,7 +31,7 @@ Takes a fasta file of exons, returns a fasta file of exons that are present in e
 
 **Note: input MUST be in FlyBase format**
 
-e.g. `>GENE:EXON type=TYPE; loc=LOCATION; parent=TRANSCRIPTS; MD5=ID; release=RELEASE; species=SPECIES; length=LENGTH`
+`>GENE:EXON type=TYPE; loc=LOCATION; parent=TRANSCRIPTS; MD5=ID; release=RELEASE; species=SPECIES; length=LENGTH`
 
 **Example usage:**
 ```bash
@@ -41,6 +42,7 @@ ConstitutiveExonFinder.py -e exons.fas
 Takes a fasta file of exons and a boundary length, returns a fasta file of exon junctions.
 
 **Note: input file must be named in the format**
+
 `GeneName:ExonNumber`
 
 **Example usage:**
