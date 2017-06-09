@@ -148,19 +148,20 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	TargetExonStrands= []
 	TargetExonChroms = []
 	for line in open(exonerateoutput,'r'):
-		if line.startswith('sugar:'):	
-			# read in exon name (keeping same as Query name to allow 1:1 matching)
-			TargetExonNames.append(line.split(' ')[1])
-			# read in target exon start coordinate
-			TargetExonStarts.append(str(int(line.split(' ')[6])+1))
-			# read in target exon end coordinate
-			TargetExonEnds.append(str(int(line.split(' ')[7])+1))
-			# read in target exon strand
-			TargetExonStrands.append(line.split(' ')[8])
-			# read in target exon chromosome
-			TargetExonChroms.append(line.split(' ')[5])
-			# read in target exon match length
-			TargetExonLengths.append(int(line.split(' ')[7])-int(line.split(' ')[6]))
+		if line.startswith('sugar:'):
+			if line.split(' ')[1] not in TargetExonNames:	
+				# read in exon name (keeping same as Query name to allow 1:1 matching)
+				TargetExonNames.append(line.split(' ')[1])
+				# read in target exon start coordinate
+				TargetExonStarts.append(str(int(line.split(' ')[6])+1))
+				# read in target exon end coordinate
+				TargetExonEnds.append(str(int(line.split(' ')[7])+1))
+				# read in target exon strand
+				TargetExonStrands.append(line.split(' ')[8])
+				# read in target exon chromosome
+				TargetExonChroms.append(line.split(' ')[5])
+				# read in target exon match length
+				TargetExonLengths.append(int(line.split(' ')[7])-int(line.split(' ')[6]))
 	##############################################################################################
 	## find exons & genes with length differences between query (old) and target (new) versions ##
 	##############################################################################################
@@ -213,7 +214,7 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 			if exon==QueryExonNames[i]:
 				QueryExonNamesVerified.append(QueryExonNames[i])
 				QueryExonSeqsVerified.append(QueryExonSeqs[i])
-	print(str(len(QueryExonNamesVerified))+' verified names and '+str(len(QueryExonSeqsVerified))+' verified sequences processed')
+	print(str(len(QueryExonNamesVerified))+' verified names and '+str(len(QueryExonSeqsVerified))+' verified sequences processed for query exons')
 	# create new lists for target exons, containing only exons with same length
 	TargetExonNamesVerified=[]
 	TargetExonStartsVerified=[]
@@ -228,6 +229,7 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 				TargetExonEndsVerified.append(TargetExonEnds[i])
 				TargetExonStrandsVerified.append(TargetExonStrands[i])
 				TargetExonChromsVerified.append(TargetExonChroms[i])
+	print(str(len(TargetExonNamesVerified))+' verified names and '+str(len(TargetExonStartsVerified))+' verified sequences processed for query exons')
 	####################
 	## output results ##
 	####################
