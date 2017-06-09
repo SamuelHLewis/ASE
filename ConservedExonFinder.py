@@ -141,6 +141,17 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	###################################################
 	## read target exon names, lengths and positions ##
 	###################################################
+	# identify target exons with duplicate entries
+	AllTargetExons = []
+	DuplicateTargetExons = []
+	for line in open(exonerateoutput,'r'):
+		if line.startswith('sugar:'):
+			name=line.split(' ')[1]
+			# check whether name exists in all exons list BEFORE adding it, to ensure only duplicate entries are tagged
+			if name in AllTargetExons:
+				DuplicateTargetExons.append(name)
+			AllTargetExons.append(name)
+	# read in target exon characteristics	
 	TargetExonNames = []
 	TargetExonStarts=[]
 	TargetExonEnds=[]
@@ -149,7 +160,8 @@ def ExonerateParser(queryexons,exonerateoutput,targetgenome):
 	TargetExonChroms = []
 	for line in open(exonerateoutput,'r'):
 		if line.startswith('sugar:'):
-			if line.split(' ')[1] not in TargetExonNames:	
+			# only process exons which don't have duplicate entries
+			if line.split(' ')[1] not in DuplicateTargetExons:
 				# read in exon name (keeping same as Query name to allow 1:1 matching)
 				TargetExonNames.append(line.split(' ')[1])
 				# read in target exon start coordinate
